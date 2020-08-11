@@ -17,6 +17,7 @@ from django.urls import path
 from rest_framework.urlpatterns import format_suffix_patterns
 
 from FaturasAPI import views
+from rest_framework_simplejwt import views as jwt_views
 
 urlpatterns = [
     path('users/', views.UserList.as_view()),
@@ -24,7 +25,11 @@ urlpatterns = [
     path('faturas/', views.FaturasCreate.as_view()),
     path('faturas/<str:email>/', views.FaturaList.as_view()),
     path('faturas/<str:email>/<int:pk>/', views.FaturaListDetails.as_view()),
-    path('faturas/download/<str:filepath>/', views.download_file)
+    path('faturas/download/<str:filepath>/', views.download_file),
+    path('api/login/', jwt_views.TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/login/refresh/', jwt_views.TokenRefreshView.as_view(), name='token_refresh'),
+    path('entidades/', views.Entidade.as_view()),
+    path('adminEntidade/',views.AdminEntidade.as_view()),
 ]
 
 urlpatterns = format_suffix_patterns(urlpatterns)

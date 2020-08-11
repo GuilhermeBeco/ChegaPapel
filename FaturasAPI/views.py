@@ -7,9 +7,10 @@ from rest_framework import status, generics
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 import logging
-from FaturasAPI.models import UserFinal, Fatura
+from FaturasAPI.models import UserFinal, Fatura, AdminEntidade, Entidade
 from FaturasAPI.serializers import UserFinalSerializer, UserFinalSerializerDetails, UserFinalSerializerDetailsTeste, \
-    FaturaSerializer, FaturaSerializerPost
+    FaturaSerializer, FaturaSerializerPost, EntidadeSerializerPost, AdminSerializer
+from rest_framework.permissions import IsAuthenticated
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,7 @@ class UserList(generics.GenericAPIView):
 class UserListDetail(generics.GenericAPIView):
     serializer_class = UserFinalSerializerDetailsTeste
     queryset = UserFinal.objects.all()
+    permission_classes = (IsAuthenticated,)
 
     def get_object(self, pk):
         try:
@@ -42,6 +44,7 @@ class UserListDetail(generics.GenericAPIView):
             raise Http404
 
     def get(self, request, pk, format=None):
+
         serializer = UserFinalSerializerDetails(self.get_object(pk))
         return Response(serializer.data)
 
@@ -144,7 +147,7 @@ class FaturasCreate(generics.GenericAPIView):
             logger.error('' + str(fatura.id) + ':' + fatura.pdf.name)
             fatura.url = 'http://127.0.0.1:8000/faturas/download/' + fatura.pdf.name
             fatura.save()
-            if is_qr==1:
+            if is_qr == 1:
                 qr = qrcode.make(fatura.id)
                 qr.save('media/qr/' + fatura.pdf.name + '.jpeg')
                 try:
@@ -154,6 +157,35 @@ class FaturasCreate(generics.GenericAPIView):
                     return Response("Erro no QR", status.HTTP_400_BAD_REQUEST)
             return HttpResponse(fatura.id, status=status.HTTP_201_CREATED)
         return Response(serializerUser.errors, status.HTTP_400_BAD_REQUEST)
+
+
+class AdminEntidade(generics.GenericAPIView):
+    serializer_class = AdminSerializer
+
+    def post(self, request, format=None):
+        serializedAdmin = AdminSerializer(data=request.data)
+        if serializedAdmin.is_valid():
+            serializedAdmin.save()
+            return Response(status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializedAdmin.errors, status.HTTP_400_BAD_REQUEST)
+
+
+class Entidade(generics.GenericAPIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, format=None):
+        admin = AdminEntidade.objects.get(userFinal__user__username=request.user.username)
+        serializedEntidade = EntidadeSerializerPost(data=request.data)
+        if serializedEntidade.is_valid():
+            entidade = Entidade()
+            entidade.admin = admin
+            entidade.morada = serializedEntidade.validated_data['Morada']
+            entidade.nome = serializedEntidade.validated_data['Nome']
+            entidade.save()
+            return Response(status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializedEntidade.errors, status.HTTP_400_BAD_REQUEST)
 
 
 def download_file(request, filepath, format=None):

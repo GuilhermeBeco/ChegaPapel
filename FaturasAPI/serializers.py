@@ -1,6 +1,6 @@
 from django.contrib.auth.models import Group
 from django.contrib.auth.models import User
-from FaturasAPI.models import UserFinal, Fatura
+from FaturasAPI.models import UserFinal, Fatura, Entidade, AdminEntidade
 from rest_framework import serializers
 # import the logging library
 import logging
@@ -98,6 +98,32 @@ class FaturaSerializerPost(serializers.ModelSerializer):
     class Meta:
         model = Fatura
         fields = ['entidade', 'valor', 'data', 'pdf']
+
+
+class EntidadeSerializerPost(serializers.ModelSerializer):
+    class Meta:
+        model = Entidade
+        fields = ['Nome', 'Morada']
+
+
+class EntidadeSerializerDetails(serializers.ModelSerializer):
+    class Meta:
+        model = Entidade
+        fields = ['id', 'Nome', 'Morada', 'Admin']
+
+
+class AdminSerializer(serializers.ModelSerializer):
+    userFinal = UserFinalSerializerDetails(many=False)
+
+    class Meta:
+        model = AdminEntidade
+        fields = ['cargo', 'userFinal']
+
+    def create(self, validated_data):
+        ufSerializer = UserFinalSerializerDetails()
+        uf = ufSerializer.create(validated_data=validated_data.pop("userFinal"))
+        cargoCreate = validated_data.pop("cargo")
+        return AdminEntidade.objects.create(userFinal=uf, cargo=cargoCreate)
 
 
 class GroupSerializer(serializers.HyperlinkedModelSerializer):
