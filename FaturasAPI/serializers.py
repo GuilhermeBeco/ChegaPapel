@@ -1,6 +1,6 @@
 from django.contrib.auth.models import Group
 from django.contrib.auth.models import User
-from FaturasAPI.models import UserFinal, Fatura, Entidade, AdminEntidade
+from FaturasAPI.models import UserFinal, Fatura, Entidade, AdminEntidade, Funcionario
 from rest_framework import serializers
 # import the logging library
 import logging
@@ -100,16 +100,24 @@ class FaturaSerializerPost(serializers.ModelSerializer):
         fields = ['entidade', 'valor', 'data', 'pdf']
 
 
+# noinspection PyMethodOverriding
 class EntidadeSerializerPost(serializers.ModelSerializer):
     class Meta:
         model = Entidade
-        fields = ['Nome', 'Morada']
+        fields = ['nome', 'morada']
+
+    def create(self, validated_data, email):
+        entidade = Entidade()
+        entidade.nome = validated_data.pop("nome")
+        entidade.morada = validated_data.pop("morada")
+        entidade.admin = AdminEntidade.objects.get(userFinal__user__email=email)
+        entidade.save()
 
 
 class EntidadeSerializerDetails(serializers.ModelSerializer):
     class Meta:
         model = Entidade
-        fields = ['id', 'Nome', 'Morada', 'Admin']
+        fields = ['nome', 'morada', 'admin']
 
 
 class AdminSerializer(serializers.ModelSerializer):
@@ -124,6 +132,53 @@ class AdminSerializer(serializers.ModelSerializer):
         uf = ufSerializer.create(validated_data=validated_data.pop("userFinal"))
         cargoCreate = validated_data.pop("cargo")
         return AdminEntidade.objects.create(userFinal=uf, cargo=cargoCreate)
+
+
+class AdminSerializerDetails(serializers.ModelSerializer):
+    userFinal = UserFinalSerializerDetailsTeste(many=False)
+
+    class Meta:
+        model = AdminEntidade
+        fields = ['cargo', 'userFinal']
+
+    def update(self, instance, validated_data):
+        admin = AdminEntidade.objects.get(pk=instance.id)
+        admin.cargo = instance.cargo
+        ufSerializerDetailsTeste = UserFinalSerializerDetailsTeste()
+        admin.userFinal = ufSerializerDetailsTeste.update(UserFinal.objects.get(pk=instance.userFinal.id),
+                                                          validated_data.pop("userFinal"))
+        admin.save()
+        return admin
+
+
+class FuncionarioSerializer(serializers.ModelSerializer):
+    userFinal = UserFinalSerializerDetails(many=False)
+
+    class Meta:
+        model = Funcionario
+        fields = ['userFinal']
+
+    def create(self, validated_data, admin):
+        ufSerializer = UserFinalSerializerDetails()
+        uf = ufSerializer.create(validated_data=validated_data.pop("userFinal"))
+        entidade = Entidade.objects.get(admin=admin)
+        return Funcionario.objects.create(userFinal=uf, entidade=entidade)
+
+
+class FuncionarioDetails(serializers.ModelSerializer):
+    userFinal = UserFinalSerializerDetailsTeste(many=False)
+
+    class Meta:
+        model = Funcionario
+        fields = ['userFinal']
+
+    def update(self, instance, validated_data):
+        funcionario = Funcionario.objects.get(pk=instance.id)
+        ufSerializerDetailsTeste = UserFinalSerializerDetailsTeste()
+        funcionario.userFinal = ufSerializerDetailsTeste.update(UserFinal.objects.get(pk=instance.userFinal.id),
+                                                                validated_data.pop("userFinal"))
+        funcionario.save()
+        return funcionario
 
 
 class GroupSerializer(serializers.HyperlinkedModelSerializer):

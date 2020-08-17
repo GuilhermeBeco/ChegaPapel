@@ -17,7 +17,7 @@ DEFAULT_USER_ID = 8
 
 
 class AdminEntidade(models.Model):
-    id=models.AutoField(primary_key=True)
+    id = models.AutoField(primary_key=True)
     userFinal = models.OneToOneField(UserFinal, on_delete=models.DO_NOTHING)
     cargo = models.TextField(blank=False)
     pass
@@ -33,7 +33,6 @@ class Entidade(models.Model):
 class Funcionario(models.Model):
     id = models.AutoField(primary_key=True)
     userFinal = models.OneToOneField(UserFinal, on_delete=models.DO_NOTHING)
-    superior = models.ForeignKey(AdminEntidade, on_delete=models.DO_NOTHING)
     entidade = models.ForeignKey(Entidade, on_delete=models.DO_NOTHING)
     pass
 
@@ -41,7 +40,7 @@ class Funcionario(models.Model):
 class Fatura(models.Model):
     id = models.AutoField(primary_key=True)
     entidade = models.ForeignKey(Entidade, on_delete=models.DO_NOTHING)
-    funcionario=models.ForeignKey(Funcionario,on_delete=models.DO_NOTHING)
+    funcionario = models.ForeignKey(Funcionario, on_delete=models.DO_NOTHING)
     valor = models.DecimalField(max_digits=9, decimal_places=2)
     pdf = models.FileField(storage=fs)
     data = models.DateField(auto_now_add=True)

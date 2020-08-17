@@ -28,8 +28,14 @@ urlpatterns = [
     path('faturas/download/<str:filepath>/', views.download_file),
     path('api/login/', jwt_views.TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/login/refresh/', jwt_views.TokenRefreshView.as_view(), name='token_refresh'),
-    path('entidades/', views.Entidade.as_view()),
-    path('adminEntidade/',views.AdminEntidade.as_view()),
+    path('entidades/', views.EntidadePost.as_view()),
+    path('entidades/details/', views.EntidadeDetails.as_view()),
+    path('adminEntidade/', views.AdminEntidadeView.as_view()),
+    path('adminEntidade/details/', views.AdminEntidadeDetails.as_view()),
+    path('activate/request/', views.Activation.as_view()),
+    path('activate/<slug:uidb64>/', views.ReActivate.as_view(), name='activate'),
+    path('funcionario/', views.FuncionariosPost.as_view()),
+    path('funcionario/details/', views.FuncionariosDetails.as_view())
 ]
 
 urlpatterns = format_suffix_patterns(urlpatterns)
