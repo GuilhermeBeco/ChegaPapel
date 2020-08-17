@@ -1,14 +1,26 @@
 import datetime
-
+from hashid_field import HashidField
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.files.storage import FileSystemStorage
 
 
+class SecurityQuestion(models.Model):
+    id = models.AutoField(primary_key=True)
+    question = models.TextField(blank=False)
+
+
 class UserFinal(models.Model):
     user = models.OneToOneField(User, on_delete=models.DO_NOTHING)
     nif = models.IntegerField(default='000000000')
+    question = models.ManyToManyField(SecurityQuestion, through='SecurityQuestionsInter')
     pass
+
+
+class SecurityQuestionsInter(models.Model):
+    profile = models.ForeignKey(UserFinal, on_delete=models.DO_NOTHING)
+    security_questions = models.ForeignKey(SecurityQuestion, on_delete=models.DO_NOTHING)
+    answer = HashidField()
 
 
 fs = FileSystemStorage(location='media/pdfs')
@@ -44,6 +56,7 @@ class Fatura(models.Model):
     valor = models.DecimalField(max_digits=9, decimal_places=2)
     pdf = models.FileField(storage=fs)
     data = models.DateField(auto_now_add=True)
+    # mudar o default para um auto now add + 15 days
     data_delete = models.DateField(default=datetime.date.today() + datetime.timedelta(days=15))
     url = models.TextField(blank=True)
     is_garantia = models.BinaryField(default=False)

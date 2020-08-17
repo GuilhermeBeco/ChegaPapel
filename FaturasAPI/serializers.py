@@ -1,12 +1,18 @@
 from django.contrib.auth.models import Group
 from django.contrib.auth.models import User
-from FaturasAPI.models import UserFinal, Fatura, Entidade, AdminEntidade, Funcionario
+from FaturasAPI.models import UserFinal, Fatura, Entidade, AdminEntidade, Funcionario, SecurityQuestion
 from rest_framework import serializers
 # import the logging library
 import logging
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
+
+
+class QuestionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SecurityQuestion
+        fields = ['short', 'question']
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -40,7 +46,7 @@ class UserFinalSerializerDetails(serializers.ModelSerializer):
 
     class Meta:
         model = UserFinal
-        fields = ['user', 'nif']
+        fields = ['user', 'nif','question']
 
     def create(self, validated_data):
         logger.error('Something went wrong!')
