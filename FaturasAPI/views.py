@@ -65,18 +65,6 @@ class UserListDetail(generics.GenericAPIView):
             return Response(status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def patch(self, request, pk, format=None):
-        userFinal = self.get_object(pk)
-        user = userFinal.user
-        if user.check_password(request.data['password_old']):
-            if request.data['password'] == request.data['password_confirmation']:
-                user.set_password(raw_password=request.data['password'])
-                user.save()
-                return Response(status=status.HTTP_202_ACCEPTED)
-            else:
-                return Response('The passwords don´t match', status=status.HTTP_400_BAD_REQUEST)
-        return Response('The old password doesn´t match', status=status.HTTP_400_BAD_REQUEST)
-
 
 class FaturaList(generics.GenericAPIView):
     queryset = Fatura.objects.all()
@@ -333,21 +321,20 @@ class FuncionariosDetails(generics.GenericAPIView):
 
 class Activation(generics.GenericAPIView):
     def post(self, request, format=None):
-        if not AdminEntidade.objects.filter(userFinal__user__email=request.data.get("email")).exists():
+        if not User.objects.filter(email=request.data.get("email")).exists():
             return Response("Your admin does not exist", status.HTTP_400_BAD_REQUEST)
-        admin = AdminEntidade.objects.get(userFinal__user__email=request.data.get("email"))
-        logger.error(admin.cargo)
-        if admin.userFinal.user.is_active == 0:
+        admin = User.objects.get(email=request.data.get("email"))
+        if admin.is_active == 0:
             current_site = get_current_site(request)
             subject = 'Ativate your account'
-            uid = urlsafe_base64_encode(force_bytes(admin.userFinal.user.email)).decode()
+            uid = urlsafe_base64_encode(force_bytes(admin.email)).decode()
 
             # activation_link = "{0}/uid={1}/token={2}".format(current_site, uid, token)
             activation_link = "{0}/activate/{1}/".format(current_site, uid)
 
             email_from = settings.EMAIL_HOST_USER
-            to_email = [admin.userFinal.user.email]
-            message = "Hello {0},\n {1}".format(admin.userFinal.user.username, activation_link)
+            to_email = [admin.email]
+            message = "Hello {0},\n {1}".format(admin.username, activation_link)
             send_mail(subject, message, email_from, to_email)
             return Response('Please confirm your email address to complete the registration')
         else:
@@ -355,19 +342,65 @@ class Activation(generics.GenericAPIView):
 
 
 class ReActivate(generics.GenericAPIView):
-    def get(self, request, uidb64):
+    def get(self, request, uidb64, format=None):
         try:
             uid = force_text(urlsafe_base64_decode(uidb64))
             admin = User.objects.get(email=uid)
         except (TypeError, ValueError, OverflowError, admin.DoesNotExist):
             admin = None
-
+        # security questions
         if admin is not None:
             admin.is_active = 1
             admin.save()
             return Response('Account activated successfully', status.HTTP_202_ACCEPTED)
         else:
             return Response("Your new admin does not exist", status.HTTP_400_BAD_REQUEST)
+
+
+class PasswordReset(generics.GenericAPIView):
+    def get(self, request, uidb64, format=None):
+        try:
+            uid = force_text(urlsafe_base64_decode(uidb64))
+            admin = User.objects.get(email=uid)
+        except (TypeError, ValueError, OverflowError, admin.DoesNotExist):
+            admin = None
+        # security questions
+        if admin is not None and admin.is_active == 1:
+            admin.set_password(raw_password=urlsafe_base64_encode(force_bytes(admin.username)).decode())
+            admin.save()
+            return Response('Your new password is: {}'.format(urlsafe_base64_encode(force_bytes(admin.username)).decode()), status.HTTP_202_ACCEPTED)
+        else:
+            return Response("Your user does not exist or isn't active", status.HTTP_400_BAD_REQUEST)
+
+
+class PasswordManager(generics.GenericAPIView):
+    def patch(self, request, format=None):
+        user = User.objects.get(username=request.user.username)
+        # if not exist, 400
+        if user.check_password(request.data['password_old']):
+            if request.data['password'] == request.data['password_confirmation']:
+                user.set_password(raw_password=request.data['password'])
+                user.save()
+                return Response(status=status.HTTP_202_ACCEPTED)
+            else:
+                return Response('The passwords don´t match', status=status.HTTP_400_BAD_REQUEST)
+        return Response('The old password doesn´t match', status=status.HTTP_400_BAD_REQUEST)
+
+    def post(self, request, format=None):
+        if not User.objects.filter(email=request.data.get("email")).exists():
+            return Response("Your admin does not exist", status.HTTP_400_BAD_REQUEST)
+        admin = User.objects.get(email=request.data.get("email"))
+        current_site = get_current_site(request)
+        subject = 'Password reset'
+
+        uid = urlsafe_base64_encode(force_bytes(admin.email)).decode()
+        activation_link = "{0}/password/{1}/".format(current_site, uid)
+
+        email_from = settings.EMAIL_HOST_USER
+        to_email = [admin.email]
+        message = "Hello {0},\n {1}".format(admin.username, activation_link)
+        send_mail(subject, message, email_from, to_email)
+        return Response('Please head to your email to reset your password')
 
 
 def download_file(request, filepath, format=None):

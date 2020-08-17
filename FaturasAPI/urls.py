@@ -35,7 +35,9 @@ urlpatterns = [
     path('activate/request/', views.Activation.as_view()),
     path('activate/<slug:uidb64>/', views.ReActivate.as_view(), name='activate'),
     path('funcionario/', views.FuncionariosPost.as_view()),
-    path('funcionario/details/', views.FuncionariosDetails.as_view())
+    path('funcionario/details/', views.FuncionariosDetails.as_view()),
+    path('password/', views.PasswordManager.as_view()),
+    path('password/<slug:uidb64>/', views.PasswordReset.as_view(), name='activate'),
 ]
 
 urlpatterns = format_suffix_patterns(urlpatterns)
