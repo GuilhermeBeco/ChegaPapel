@@ -35,7 +35,7 @@ class UserList(generics.GenericAPIView):
     def post(self, request, format=None):
         serializerUser = UserFinalSerializerDetails(data=request.data)
         if serializerUser.is_valid():
-            serializerUser.save()
+            serializerUser.create(serializerUser.data,request.data.get("question"))
             return Response(serializerUser.data, status.HTTP_201_CREATED)
         return Response(serializerUser.errors, status.HTTP_400_BAD_REQUEST)
 

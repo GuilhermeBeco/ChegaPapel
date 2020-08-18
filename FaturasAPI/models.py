@@ -1,4 +1,6 @@
 import datetime
+
+from django_hash_field import HashField
 from hashid_field import HashidField
 from django.db import models
 from django.contrib.auth.models import User
@@ -18,9 +20,9 @@ class UserFinal(models.Model):
 
 
 class SecurityQuestionsInter(models.Model):
-    profile = models.ForeignKey(UserFinal, on_delete=models.DO_NOTHING)
+    profile = models.ForeignKey(User, on_delete=models.DO_NOTHING)
     security_questions = models.ForeignKey(SecurityQuestion, on_delete=models.DO_NOTHING)
-    answer = HashidField()
+    answer = models.TextField(blank=False,default="none")
 
 
 fs = FileSystemStorage(location='media/pdfs')

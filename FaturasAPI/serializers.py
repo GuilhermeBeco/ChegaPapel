@@ -1,7 +1,11 @@
+import hashlib
+
 from django.contrib.auth.models import Group
 from django.contrib.auth.models import User
-from FaturasAPI.models import UserFinal, Fatura, Entidade, AdminEntidade, Funcionario, SecurityQuestion
+from FaturasAPI.models import UserFinal, Fatura, Entidade, AdminEntidade, Funcionario, SecurityQuestion, \
+    SecurityQuestionsInter
 from rest_framework import serializers
+from django.contrib.auth.hashers import make_password
 # import the logging library
 import logging
 
@@ -12,7 +16,13 @@ logger = logging.getLogger(__name__)
 class QuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = SecurityQuestion
-        fields = ['short', 'question']
+        fields = ['question']
+
+
+class SecurityQuestionsInterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SecurityQuestionsInter
+        fields = ['security_questions', 'answer']
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -46,9 +56,9 @@ class UserFinalSerializerDetails(serializers.ModelSerializer):
 
     class Meta:
         model = UserFinal
-        fields = ['user', 'nif','question']
+        fields = ['user', 'nif']
 
-    def create(self, validated_data):
+    def create(self, validated_data, questionData):
         logger.error('Something went wrong!')
         nif = validated_data.pop('nif')
         userData = validated_data.pop("user")
@@ -56,6 +66,10 @@ class UserFinalSerializerDetails(serializers.ModelSerializer):
         user.set_password(userData.get('password'))
         user.save()
         userFinal = UserFinal.objects.create(user=user, nif=nif)
+        question = questionData.get("security_questions")
+        answer = make_password(questionData.get("answer"))
+        sqi = SecurityQuestionsInter(security_questions_id=question, profile=user, answer=answer)
+        sqi.save()
         return userFinal
 
 
